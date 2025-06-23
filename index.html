@@ -43,33 +43,6 @@
   let z = 0
   let mode = select.value
   
-  // RGB mode layout:
-  // ┌───────────┐
-  // │           │
-  // │           │
-  // R           │
-  // │           │
-  // │           │
-  // └───────G───┘
-  //
-  // B is the z axis (scroll/double swipe)
-  function drawRGBGradient() {
-    const imageData = ctx.createImageData(width, height);
-    const b = z * 255;
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const r = (y / height) * 255;
-        const g = (x / width) * 255;
-        const idx = (y * width + x) * 4;
-        imageData.data[idx] = r;
-        imageData.data[idx + 1] = g;
-        imageData.data[idx + 2] = b;
-        imageData.data[idx + 3] = 255;
-      }
-    }
-    ctx.putImageData(imageData, 0, 0);
-  }
-
   function colorFromXY(x, y, z) {
     let fx = x/width, fy = y/height
     if (mode === 'rgb') {
@@ -122,30 +95,41 @@
     ctx.restore();
   }
 
+  // Always use lastPointer for color selection, except if never moved, use center
   function updateCanvas() {
-    if (mode === 'rgb') {
-      drawRGBGradient();
-    } else {
-      ctx.clearRect(0, 0, width, height);
+    ctx.clearRect(0, 0, width, height);
+    let px = lastPointer.x, py = lastPointer.y;
+    if (px === width - 1 && py === height - 1) {
+      px = width / 2;
+      py = height / 2;
     }
-    drawOverlay(lastPointer.x, lastPointer.y, z);
+    ctx.fillStyle = colorFromXY(px, py, z);
+    ctx.fillRect(0, 0, width, height);
+    drawOverlay(px, py, z);
   }
 
-  select.addEventListener('change', e => {
-    mode = e.target.value;
+  canvas.addEventListener('pointermove', e => {
+    lastPointer = {x: e.clientX, y: e.clientY};
     updateCanvas();
-  })
-  window.addEventListener('resize', () => {
-    width = window.innerWidth; height = window.innerHeight
-    canvas.width = width; canvas.height = height
-    updateCanvas();
-  })
+  });
+
   window.addEventListener('wheel', e => {
     z += e.deltaY * -0.0001;
     if (z < 0) z = 0;
     if (z > 1) z = 1;
     updateCanvas();
-  })
+  });
+
+  select.addEventListener('change', e => {
+    mode = e.target.value;
+    updateCanvas();
+  });
+
+  window.addEventListener('resize', () => {
+    width = window.innerWidth; height = window.innerHeight;
+    canvas.width = width; canvas.height = height;
+    updateCanvas();
+  });
 
   // Mobile double swipe detection
   let lastTouchY = null, lastTouchTime = 0, swipeCount = 0;
@@ -177,13 +161,6 @@
 
   // Initial draw
   updateCanvas();
-
-  canvas.addEventListener('pointermove', e => {
-    lastPointer = {x: e.clientX, y: e.clientY};
-    ctx.fillStyle = colorFromXY(e.clientX, e.clientY, z)
-    ctx.fillRect(0, 0, width, height)
-    drawOverlay(e.clientX, e.clientY, z);
-  })
 </script>
 </body>
 </html>
