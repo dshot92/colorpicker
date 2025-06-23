@@ -179,10 +179,10 @@
     // Draw circle at latest clicked point (canvas coordinates)
     ctx.save();
     ctx.beginPath();
-    ctx.arc(lastPointerCanvas.x, lastPointerCanvas.y, 16, 0, 2 * Math.PI);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#fff';
-    ctx.shadowColor = '#000';
+    ctx.arc(lastPointerCanvas.x, lastPointerCanvas.y, 10, 0, 2 * Math.PI);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#888';
+    // ctx.shadowColor = '#000';
     ctx.shadowBlur = 2;
     ctx.stroke();
     ctx.restore();
