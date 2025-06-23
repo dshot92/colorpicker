@@ -18,7 +18,17 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(response => {
-      return response || fetch(event.request);
+      if (response) {
+        return response;
+      }
+      return fetch(event.request).catch(error => {
+        // Fallback for navigation requests (e.g., SPA)
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+        console.error('Fetch failed:', event.request.url, error);
+        throw error;
+      });
     })
   );
 });
