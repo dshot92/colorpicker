@@ -24,10 +24,27 @@
     border-radius: 5px;
     font-size: 1rem;
   }
+  #colorInfo {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-family: monospace;
+    font-size: 16px;
+    text-align: right;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    pointer-events: none;
+    z-index: 10;
+    min-width: 220px;
+    line-height: 1.5;
+  }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="colorInfo"></div>
 <select id="colorMode">
   <option value="rgb">RGB</option>
   <option value="hsv">HSV</option>
@@ -37,6 +54,7 @@
   const canvas = document.getElementById('c')
   const ctx = canvas.getContext('2d')
   const select = document.getElementById('colorMode')
+  const colorInfo = document.getElementById('colorInfo')
   let width = window.innerWidth, height = window.innerHeight
   canvas.width = width; canvas.height = height
   
@@ -137,25 +155,10 @@
   }
 
   function drawOverlay(x, y, z) {
-    const margin = 16;
+    // Update the colorInfo div instead of drawing on canvas
     const lines = Object.values(getColorValues(x, y, z));
-    ctx.save();
-    ctx.font = '16px monospace';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
-    ctx.globalAlpha = 0; // Make box transparent
-    // background box
-    const lineHeight = 22;
-    const boxWidth = Math.max(...lines.map(l => ctx.measureText(l).width)) + 20;
-    const boxHeight = lineHeight * lines.length + 10;
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(width - boxWidth - margin, height - boxHeight - margin, boxWidth, boxHeight);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = getOverlayTextColor(x, y, z);
-    lines.forEach((line, i) => {
-      ctx.fillText(line, width - margin, height - margin - (lines.length-1-i)*lineHeight);
-    });
-    ctx.restore();
+    colorInfo.innerHTML = lines.map(line => `<div>${line}</div>`).join('');
+    colorInfo.style.color = getOverlayTextColor(x, y, z);
   }
 
   // Always use lastPointer for color selection, except if never moved, use center
@@ -169,6 +172,12 @@
     ctx.fillStyle = colorFromXY(px, py, z);
     ctx.fillRect(0, 0, width, height);
     drawOverlay(px, py, z);
+    updateColorInfo(px, py, z);
+  }
+
+  function updateColorInfo(x, y, z) {
+    const values = getColorValues(x, y, z);
+    colorInfo.innerHTML = `${values.hex}<br>${values.rgb}<br>${values.hsv}<br>${values.hsl}`;
   }
 
   canvas.addEventListener('pointermove', e => {
