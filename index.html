@@ -20,10 +20,8 @@
     position: absolute;
     bottom: 0px;
     left: 0%;
-    /* transform: translateX(-50%); */
     padding: 0.5rem;
     margin: 0.75rem;
-    /* background: rgba(255,255,255,0.8); */
     border: none;
     border-radius: 5px;
     font-size: 1rem;
@@ -32,14 +30,10 @@
     position: absolute;
     bottom: 0px;
     right: 0px;
-    /* background: rgba(255,255,255,0.8); */
     padding: 0.5rem;
     margin: 0.75rem;
     text-align: right;
-    /* box-shadow: 0 2px 8px rgba(0,0,0,0.08); */
     pointer-events: none;
-    z-index: 10;
-    /* line-height: 1.5; */
   }
 </style>
 </head>
@@ -48,7 +42,6 @@
 <div id="colorInfo"></div>
 <select id="colorMode">
   <option value="rgb">RGB</option>
-  <option value="hsv">HSV</option>
   <option value="hsl">HSL</option>
 </select>
 <script>
@@ -109,10 +102,6 @@
     let fx = x/width, fy = y/height
     if (mode === 'rgb') {
       return `rgb(${fy*255},${fx*255},${z*255})`
-    } else if (mode === 'hsv') {
-      const h = fx*360, s = fy*100, v = z*100;
-      const [r, g, b] = hsvToRgb(h, s, v);
-      return `rgb(${r},${g},${b})`;
     } else {
       const h = fx*360, s = fy*100, l = z*100;
       const [r, g, b] = hslToRgb(h, s, l);
@@ -130,18 +119,44 @@
 
   function getColorValues(x, y, z) {
     let fx = x/width, fy = y/height;
-    // RGB
-    let r = fy*255, g = fx*255, b = z*255;
-    // HSV
-    let h_hsv = fx*360, s_hsv = fy*100, v_hsv = z*100;
-    // HSL
-    let h_hsl = fx*360, s_hsl = fy*100, l_hsl = z*100;
-    return {
-      hex: `HEX: #${((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1).toUpperCase()}`,
-      rgb: `RGB: ${pad3(r)} ,  ${pad3(g)}, ${pad3(b)} `,
-      hsv: `HSV: ${pad3(h_hsv)}°, ${pad3(s_hsv)}%, ${pad3(v_hsv)}%`,
-      hsl: `HSL: ${pad3(h_hsl)}°, ${pad3(s_hsl)}%, ${pad3(l_hsl)}%`,
-    };
+    if (mode === 'rgb') {
+      // RGB mode: direct mapping
+      let r = fy*255, g = fx*255, b = z*255;
+      const hex = `HEX: #${((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1).toUpperCase()}`;
+      const rgb = `RGB: ${pad3(r)}, ${pad3(g)}, ${pad3(b)}`;
+      // Also show HSL equivalent
+      const [h, s, l] = rgbToHsl(r, g, b);
+      const hsl = `HSL: ${pad3(h)}, ${pad3(s)}, ${pad3(l)}`;
+      return { hex, rgb, hsl };
+    } else {
+      // HSL mode: use HSL to RGB conversion
+      let h_hsl = fx*360, s_hsl = fy*100, l_hsl = z*100;
+      const [r, g, b] = hslToRgb(h_hsl, s_hsl, l_hsl);
+      const hex = `HEX: #${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+      const rgb = `RGB: ${pad3(r)}, ${pad3(g)}, ${pad3(b)}`;
+      const hsl = `HSL: ${pad3(h_hsl)}, ${pad3(s_hsl)}, ${pad3(l_hsl)}`;
+      return { hex, rgb, hsl };
+    }
+  }
+
+  // Add RGB to HSL conversion for reporting
+  function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    let max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) {
+      h = s = 0; // achromatic
+    } else {
+      let d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h *= 60;
+    }
+    return [Math.round(h), Math.round(s*100), Math.round(l*100)];
   }
 
   function getOverlayTextColor(x, y, z) {
@@ -157,8 +172,8 @@
 
   function drawOverlay(x, y, z) {
     // Update the colorInfo div instead of drawing on canvas
-    const lines = Object.values(getColorValues(x, y, z));
-    colorInfo.innerHTML = lines.map(line => `<div>${line}</div>`).join('');
+    const values = getColorValues(x, y, z);
+    colorInfo.innerHTML = `<pre>${values.hex}\n${values.rgb}\n${values.hsl}</pre>`;
     colorInfo.style.color = getOverlayTextColor(x, y, z);
   }
 
@@ -177,8 +192,9 @@
   }
 
   function updateColorInfo(x, y, z) {
+    // Keep this in sync with drawOverlay for alignment
     const values = getColorValues(x, y, z);
-    colorInfo.innerHTML = `${values.hex}<br>${values.rgb}<br>${values.hsv}<br>${values.hsl}`;
+    colorInfo.innerHTML = `<pre>${values.hex}\n${values.rgb}\n${values.hsl}</pre>`;
   }
 
   canvas.addEventListener('pointermove', e => {
