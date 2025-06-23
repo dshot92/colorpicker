@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Color Picker</title>
+<link id="dynamic-favicon" rel="icon" type="image/png" href="">
 <style>
   html, body {
     margin: 0; padding: 0; overflow: hidden;
@@ -137,10 +139,36 @@
     return `rgb(${inv},${inv},${inv})`;
   }
 
+  function setFaviconAndTitle(hex) {
+    // Set title
+    document.title = hex;
+    // Create favicon
+    const canvas = document.createElement('canvas');
+    canvas.width = 32; canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = hex;
+    ctx.fillRect(0, 0, 32, 32);
+    // Optional: add border for visibility
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, 32, 32);
+    const url = canvas.toDataURL('image/png');
+    let link = document.getElementById('dynamic-favicon');
+    if (!link) {
+      link = document.createElement('link');
+      link.id = 'dynamic-favicon';
+      link.rel = 'icon';
+      link.type = 'image/png';
+      document.head.appendChild(link);
+    }
+    link.href = url;
+  }
+
   function drawOverlay(xNorm, yNorm, zNorm) {
     const values = getColorValues(xNorm, yNorm, zNorm);
     colorInfo.innerHTML = `<pre>${values.hex}\n${values.rgb}\n${values.hsl}</pre>`;
     colorInfo.style.color = getOverlayTextColor(xNorm, yNorm, zNorm);
+    setFaviconAndTitle(values.hex.replace('HEX: ', ''));
   }
 
   function updateCanvas() {
