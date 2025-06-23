@@ -55,7 +55,7 @@
   // B is the z axis (scroll/double swipe)
   function drawRGBGradient() {
     const imageData = ctx.createImageData(width, height);
-    const b = ((z % 1 + 1) % 1) * 255;
+    const b = z * 255;
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const r = (y / height) * 255;
@@ -73,12 +73,12 @@
   function colorFromXY(x, y, z) {
     let fx = x/width, fy = y/height
     if (mode === 'rgb') {
-      return `rgb(${fy*255},${fx*255},${((z%1+1)%1)*255})`
+      return `rgb(${fy*255},${fx*255},${z*255})`
     } else if (mode === 'hsv') {
-      const h = fx*360, s = fy, v = (z%1+1)%1
+      const h = fx*360, s = fy, v = z
       return `hsv(${h},${s*100}%,${v*100}%)`
     } else {
-      const h = fx*360, s = fy*100, l = (z%1+1)%1*50
+      const h = fx*360, s = fy*100, l = z*50
       return `hsl(${h},${s}%,${l}%)`
     }
   }
@@ -88,11 +88,11 @@
   function getColorValues(x, y, z) {
     let fx = x/width, fy = y/height;
     // RGB
-    let r = Math.round(fy*255), g = Math.round(fx*255), b = Math.round(((z%1+1)%1)*255);
+    let r = Math.round(fy*255), g = Math.round(fx*255), b = Math.round(z*255);
     // HSV
-    let h_hsv = Math.round(fx*360), s_hsv = Math.round(fy*100), v_hsv = Math.round(((z%1+1)%1)*100);
+    let h_hsv = Math.round(fx*360), s_hsv = Math.round(fy*100), v_hsv = Math.round(z*100);
     // HSL
-    let h_hsl = Math.round(fx*360), s_hsl = Math.round(fy*100), l_hsl = Math.round(((z%1+1)%1*50));
+    let h_hsl = Math.round(fx*360), s_hsl = Math.round(fy*100), l_hsl = Math.round(z*50);
     return {
       rgb: `rgb:${r},${g},${b}`,
       hsv: `hsv:${h_hsv},${s_hsv},${v_hsv}`,
@@ -107,7 +107,7 @@
     ctx.font = '16px monospace';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.globalAlpha = 0.85;
+    ctx.globalAlpha = 0;
     // background box
     const lineHeight = 22;
     const boxWidth = Math.max(...lines.map(l => ctx.measureText(l).width)) + 20;
@@ -141,8 +141,10 @@
     updateCanvas();
   })
   window.addEventListener('wheel', e => {
-    z += e.deltaY * -0.001
-    if (mode === 'rgb') updateCanvas();
+    z += e.deltaY * -0.0001;
+    if (z < 0) z = 0;
+    if (z > 1) z = 1;
+    updateCanvas();
   })
 
   // Mobile double swipe detection
@@ -178,15 +180,9 @@
 
   canvas.addEventListener('pointermove', e => {
     lastPointer = {x: e.clientX, y: e.clientY};
-    if (mode === 'rgb') {
-      ctx.fillStyle = colorFromXY(e.clientX, e.clientY, z)
-      ctx.fillRect(0, 0, width, height)
-      drawOverlay(e.clientX, e.clientY, z);
-    } else {
-      ctx.fillStyle = colorFromXY(e.clientX, e.clientY, z)
-      ctx.fillRect(0, 0, width, height)
-      drawOverlay(e.clientX, e.clientY, z);
-    }
+    ctx.fillStyle = colorFromXY(e.clientX, e.clientY, z)
+    ctx.fillRect(0, 0, width, height)
+    drawOverlay(e.clientX, e.clientY, z);
   })
 </script>
 </body>
