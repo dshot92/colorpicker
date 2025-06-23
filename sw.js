@@ -4,8 +4,13 @@ self.addEventListener('install', event => {
       return cache.addAll([
         '/',
         '/index.html',
-        '/manifest.json'
-      ]);
+        '/manifest.json',
+        '/icon-192.png',
+        '/icon-512.png',
+        '/screenshot_mobile.png'
+      ]).catch(error => {
+        console.error('Cache addAll failed:', error);
+      });
     })
   );
 });
