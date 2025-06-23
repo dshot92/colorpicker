@@ -308,11 +308,9 @@
     const maxY = height - padding;
     x = Math.max(minX, Math.min(maxX, x));
     y = Math.max(minY, Math.min(maxY, y));
-    // Use padded area for normalization
+    // Invert Y: y=0 at bottom
     let xNorm = (x - minX) / (maxX - minX);
-    let yNorm = (y - minY) / (maxY - minY);
-    // xNorm = Math.max(0, Math.min(1, xNorm));
-    // yNorm = Math.max(0, Math.min(1, yNorm));
+    let yNorm = 1 - (y - minY) / (maxY - minY);
     return { x: xNorm, y: yNorm };
   }
 
@@ -321,9 +319,10 @@
     const maxX = width - padding;
     const minY = padding;
     const maxY = height - padding;
+    // Invert Y: yNorm=0 at bottom
     return {
       x: minX + xNorm * (maxX - minX),
-      y: minY + yNorm * (maxY - minY)
+      y: minY + (1 - yNorm) * (maxY - minY)
     };
   }
 
