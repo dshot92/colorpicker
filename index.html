@@ -168,27 +168,38 @@
     colorInfo.innerHTML = `<pre>${values.hex}\n${values.rgb}\n${values.hsl}</pre>`;
   }
 
+  let updateRequested = false;
+  function requestUpdate() {
+    if (!updateRequested) {
+      updateRequested = true;
+      requestAnimationFrame(() => {
+        updateRequested = false;
+        updateCanvas();
+      });
+    }
+  }
+
   canvas.addEventListener('pointermove', e => {
     lastPointer = {x: e.clientX, y: e.clientY};
-    updateCanvas();
+    requestUpdate();
   });
 
   window.addEventListener('wheel', e => {
     z += e.deltaY * -0.0001;
     if (z < 0) z = 0;
     if (z > 1) z = 1;
-    updateCanvas();
+    requestUpdate();
   });
 
   select.addEventListener('change', e => {
     mode = e.target.value;
-    updateCanvas();
+    requestUpdate();
   });
 
   window.addEventListener('resize', () => {
     width = window.innerWidth; height = window.innerHeight;
     canvas.width = width; canvas.height = height;
-    updateCanvas();
+    requestUpdate();
   });
 
   // Mobile touch handling
@@ -208,7 +219,7 @@
     if (e.touches.length === 1 && lastTouchY !== null && lastTouchX !== null) {
       // Single finger: move pointer
       lastPointer = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      updateCanvas();
+      requestUpdate();
     } else if (e.touches.length === 2 && lastTouchY !== null) {
       // Two fingers: adjust z
       const avgY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
@@ -216,7 +227,7 @@
       z = lastZ - dy * 0.003; // Sensitivity
       if (z < 0) z = 0;
       if (z > 1) z = 1;
-      updateCanvas();
+      requestUpdate();
     }
     e.preventDefault();
   }, { passive: false });
@@ -239,7 +250,7 @@
   }
 
   // Initial draw
-  updateCanvas();
+  requestUpdate();
 </script>
 </body>
 </html>
