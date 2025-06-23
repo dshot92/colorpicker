@@ -265,10 +265,13 @@
     let pxNorm = lastPointer.x, pyNorm = lastPointer.y;
     ctx.fillStyle = colorFromXY(pxNorm, pyNorm, z);
     ctx.fillRect(0, 0, width, height);
+    // Clamp the circle position to stay inside the canvas
+    let circleX = Math.max(0, Math.min(width, lastPointerCanvas.x));
+    let circleY = Math.max(0, Math.min(height, lastPointerCanvas.y));
     // Draw circle at latest clicked point (canvas coordinates)
     ctx.save();
     ctx.beginPath();
-    ctx.arc(lastPointerCanvas.x, lastPointerCanvas.y, 10, 0, 2 * Math.PI);
+    ctx.arc(circleX, circleY, 10, 0, 2 * Math.PI);
     ctx.lineWidth = 1;
     ctx.strokeStyle = '#888';
     // ctx.shadowColor = '#000';
@@ -344,26 +347,27 @@
       lastPointerCanvas = { x: e.clientX, y: e.clientY };
       lastPointer = pointerToNorm(e.clientX, e.clientY);
       requestUpdate();
+      // Add global listeners for pointermove and pointerup
+      window.addEventListener('pointermove', globalPointerMove);
+      window.addEventListener('pointerup', globalPointerUp);
     }
   });
 
-  canvas.addEventListener('pointermove', e => {
+  function globalPointerMove(e) {
     if (dragging) {
       lastPointerCanvas = { x: e.clientX, y: e.clientY };
       lastPointer = pointerToNorm(e.clientX, e.clientY);
       requestUpdate();
     }
-  });
+  }
 
-  canvas.addEventListener('pointerup', e => {
+  function globalPointerUp(e) {
     if (e.button === 0) {
       dragging = false;
+      window.removeEventListener('pointermove', globalPointerMove);
+      window.removeEventListener('pointerup', globalPointerUp);
     }
-  });
-
-  canvas.addEventListener('pointerleave', e => {
-    dragging = false;
-  });
+  }
 
   // Mobile touch handling
   let lastTouchY = null, lastZ = z;
