@@ -98,18 +98,19 @@
     return [Math.round(r*255), Math.round(g*255), Math.round(b*255)];
   }
 
-  function colorFromXY(x, y, z) {
-    let fx = x/width, fy = y/height
+  let lastPointer = { x: 1, y: 1 }; // normalized (0-1)
+  let lastPointerCanvas = { x: width / 2, y: height / 2 }; // actual canvas coordinates
+
+  function colorFromXY(xNorm, yNorm, zNorm) {
     if (mode === 'rgb') {
-      return `rgb(${fy*255},${fx*255},${z*255})`
+      // Map xNorm to Red, yNorm to Green, zNorm to Blue
+      return `rgb(${xNorm*255},${yNorm*255},${zNorm*255})`;
     } else {
-      const h = fx*360, s = fy*100, l = z*100;
+      const h = xNorm*360, s = yNorm*100, l = zNorm*100;
       const [r, g, b] = hslToRgb(h, s, l);
       return `rgb(${r},${g},${b})`;
     }
   }
-
-  let lastPointer = {x: width-1, y: height-1};
 
   function pad3(val) {
     // Pad to 3 digits, but don't show useless zeros
@@ -117,12 +118,11 @@
     return val.padStart(3, ' ');
   }
 
-  function getColorValues(x, y, z) {
-    let fx = x/width, fy = y/height;
+  function getColorValues(xNorm, yNorm, zNorm) {
     // RGB
-    let r = fy*255, g = fx*255, b = z*255;
+    let r = xNorm*255, g = yNorm*255, b = zNorm*255;
     // HSL
-    let h_hsl = fx*360, s_hsl = fy*100, l_hsl = z*100;
+    let h_hsl = xNorm*360, s_hsl = yNorm*100, l_hsl = zNorm*100;
     // Pad and align values for pretty output
     const hex = `HEX: #${((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1).toUpperCase()}`;
     const rgb = `RGB: ${pad3(r)}, ${pad3(g)}, ${pad3(b)}`;
@@ -130,41 +130,40 @@
     return { hex, rgb, hsl };
   }
 
-  function getOverlayTextColor(x, y, z) {
-    // Get the actual canvas color as rendered
-    let fx = x/width, fy = y/height;
-    let r = fy*255, g = fx*255, b = z*255;
-    // Calculate luminance
+  function getOverlayTextColor(xNorm, yNorm, zNorm) {
+    let r = xNorm*255, g = yNorm*255, b = zNorm*255;
     let lum = getLuminance(r, g, b);
-    // Invert luminance for text color
     let inv = Math.round((1 - lum + 0.5) * 255);
     return `rgb(${inv},${inv},${inv})`;
   }
 
-  function drawOverlay(x, y, z) {
-    // Update the colorInfo div instead of drawing on canvas
-    const values = getColorValues(x, y, z);
+  function drawOverlay(xNorm, yNorm, zNorm) {
+    const values = getColorValues(xNorm, yNorm, zNorm);
     colorInfo.innerHTML = `<pre>${values.hex}\n${values.rgb}\n${values.hsl}</pre>`;
-    colorInfo.style.color = getOverlayTextColor(x, y, z);
+    colorInfo.style.color = getOverlayTextColor(xNorm, yNorm, zNorm);
   }
 
-  // Always use lastPointer for color selection, except if never moved, use center
   function updateCanvas() {
     ctx.clearRect(0, 0, width, height);
-    let px = lastPointer.x, py = lastPointer.y;
-    if (px === width - 1 && py === height - 1) {
-      px = width / 2;
-      py = height / 2;
-    }
-    ctx.fillStyle = colorFromXY(px, py, z);
+    let pxNorm = lastPointer.x, pyNorm = lastPointer.y;
+    ctx.fillStyle = colorFromXY(pxNorm, pyNorm, z);
     ctx.fillRect(0, 0, width, height);
-    drawOverlay(px, py, z);
-    updateColorInfo(px, py, z);
+    // Draw circle at latest clicked point (canvas coordinates)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(lastPointerCanvas.x, lastPointerCanvas.y, 16, 0, 2 * Math.PI);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fff';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 2;
+    ctx.stroke();
+    ctx.restore();
+    drawOverlay(pxNorm, pyNorm, z);
+    updateColorInfo(pxNorm, pyNorm, z);
   }
 
-  function updateColorInfo(x, y, z) {
-    // Keep this in sync with drawOverlay for alignment
-    const values = getColorValues(x, y, z);
+  function updateColorInfo(xNorm, yNorm, zNorm) {
+    const values = getColorValues(xNorm, yNorm, zNorm);
     colorInfo.innerHTML = `<pre>${values.hex}\n${values.rgb}\n${values.hsl}</pre>`;
   }
 
@@ -179,35 +178,92 @@
     }
   }
 
-  canvas.addEventListener('pointermove', e => {
-    lastPointer = {x: e.clientX, y: e.clientY};
-    requestUpdate();
-  });
+  let dragging = false;
 
-  window.addEventListener('wheel', e => {
-    z += e.deltaY * -0.0001;
+  const padding = 32; // pixels of padding on all sides for input mapping
+
+  function normToPaddedCoord(norm, min, max, padding) {
+    // Map norm [0,1] to [padding, max-padding]
+    return min + padding + norm * (max - min - 2 * padding);
+  }
+
+  function paddedCoordToNorm(coord, min, max, padding) {
+    // Map [padding, max-padding] to norm [0,1]
+    return (coord - min - padding) / (max - min - 2 * padding);
+  }
+
+  function pointerToNorm(x, y) {
+    // Clamp pointer to padded area
+    const minX = padding;
+    const maxX = width - padding;
+    const minY = padding;
+    const maxY = height - padding;
+    x = Math.max(minX, Math.min(maxX, x));
+    y = Math.max(minY, Math.min(maxY, y));
+    // Use padded area for normalization
+    let xNorm = (x - minX) / (maxX - minX);
+    let yNorm = (y - minY) / (maxY - minY);
+    // xNorm = Math.max(0, Math.min(1, xNorm));
+    // yNorm = Math.max(0, Math.min(1, yNorm));
+    return { x: xNorm, y: yNorm };
+  }
+
+  function normToPointer(xNorm, yNorm) {
+    const minX = padding;
+    const maxX = width - padding;
+    const minY = padding;
+    const maxY = height - padding;
+    return {
+      x: minX + xNorm * (maxX - minX),
+      y: minY + yNorm * (maxY - minY)
+    };
+  }
+
+  // Desktop: mouse wheel changes z
+  canvas.addEventListener('wheel', e => {
+    // Use normalized delta for consistent behavior
+    // If Shift is held, adjust by 0.01 (fine), else by 0.05 (coarse)
+    const step = 0.005;
+    z += -Math.sign(e.deltaY) * step;
     if (z < 0) z = 0;
     if (z > 1) z = 1;
     requestUpdate();
+    e.preventDefault();
+  }, { passive: false });
+
+  canvas.addEventListener('pointerdown', e => {
+    if (e.button === 0) {
+      dragging = true;
+      lastPointerCanvas = { x: e.clientX, y: e.clientY };
+      lastPointer = pointerToNorm(e.clientX, e.clientY);
+      requestUpdate();
+    }
   });
 
-  select.addEventListener('change', e => {
-    mode = e.target.value;
-    requestUpdate();
+  canvas.addEventListener('pointermove', e => {
+    if (dragging) {
+      lastPointerCanvas = { x: e.clientX, y: e.clientY };
+      lastPointer = pointerToNorm(e.clientX, e.clientY);
+      requestUpdate();
+    }
   });
 
-  window.addEventListener('resize', () => {
-    width = window.innerWidth; height = window.innerHeight;
-    canvas.width = width; canvas.height = height;
-    requestUpdate();
+  canvas.addEventListener('pointerup', e => {
+    if (e.button === 0) {
+      dragging = false;
+    }
+  });
+
+  canvas.addEventListener('pointerleave', e => {
+    dragging = false;
   });
 
   // Mobile touch handling
-  let lastTouchY = null, lastTouchTime = 0, swipeCount = 0, lastTouchX = null, lastZ = z;
+  let lastTouchY = null, lastZ = z;
   canvas.addEventListener('touchstart', e => {
     if (e.touches.length === 1) {
-      lastTouchY = e.touches[0].clientY;
-      lastTouchX = e.touches[0].clientX;
+      lastPointer = pointerToNorm(e.touches[0].clientX, e.touches[0].clientY);
+      requestUpdate();
     } else if (e.touches.length === 2) {
       lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       lastZ = z;
@@ -216,15 +272,13 @@
   }, { passive: false });
 
   canvas.addEventListener('touchmove', e => {
-    if (e.touches.length === 1 && lastTouchY !== null && lastTouchX !== null) {
-      // Single finger: move pointer
-      lastPointer = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    if (e.touches.length === 1) {
+      lastPointer = pointerToNorm(e.touches[0].clientX, e.touches[0].clientY);
       requestUpdate();
     } else if (e.touches.length === 2 && lastTouchY !== null) {
-      // Two fingers: adjust z
       const avgY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       const dy = avgY - lastTouchY;
-      z = lastZ - dy * 0.003; // Sensitivity
+      z = lastZ + dy / (height - 2 * padding);
       if (z < 0) z = 0;
       if (z > 1) z = 1;
       requestUpdate();
@@ -233,9 +287,8 @@
   }, { passive: false });
 
   canvas.addEventListener('touchend', e => {
-    if (e.touches.length === 0) {
+    if (e.touches.length < 2) {
       lastTouchY = null;
-      lastTouchX = null;
     }
     e.preventDefault();
   }, { passive: false });
