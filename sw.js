@@ -1,16 +1,17 @@
+const BASE_PATH = '/colorpicker';
 const CACHE_NAME = 'color-picker-v1';
 const urlsToCache = [
-  '/', // This is crucial - make sure this actually resolves to your index.html
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/screenshot_mobile.png'
+  `${BASE_PATH}/`, // This is crucial - make sure this actually resolves to your index.html
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/icon-192.png`,
+  `${BASE_PATH}/icon-512.png`,
+  `${BASE_PATH}/screenshot_mobile.png`
   // Add ALL your CSS, JS, and other assets here
 ];
 
 self.addEventListener('install', event => {
-  console.log('[ServiceWorker] Install');
+  console.log('[SrviceWorker] Install');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -64,19 +65,19 @@ self.addEventListener('fetch', event => {
 
           // For navigation requests, try to serve index.html
           console.log('[ServiceWorker] Navigation request, trying index.html');
-          return caches.match('/index.html')
+          return caches.match(`${BASE_PATH}/index.html`)
             .then(indexResponse => {
               if (indexResponse) {
                 return indexResponse;
               }
 
               // If index.html not in cache, try to fetch it
-              return fetch('/index.html')
+              return fetch(`${BASE_PATH}/index.html`)
                 .then(fetchResponse => {
                   if (fetchResponse.ok) {
                     // Cache it for future use
                     caches.open(CACHE_NAME).then(cache => {
-                      cache.put('/index.html', fetchResponse.clone());
+                      cache.put(`${BASE_PATH}/index.html`, fetchResponse.clone());
                     });
                     return fetchResponse;
                   }
