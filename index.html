@@ -80,6 +80,17 @@
     };
   }
 
+  function getOverlayTextColor(x, y, z) {
+    // Get the actual canvas color as rendered
+    let fx = x/width, fy = y/height;
+    let r = fy*255, g = fx*255, b = z*255;
+    // Calculate luminance
+    let lum = getLuminance(r, g, b);
+    // Invert luminance for text color
+    let inv = Math.round((1 - lum + 0.5) * 255);
+    return `rgb(${inv},${inv},${inv})`;
+  }
+
   function drawOverlay(x, y, z) {
     const margin = 16;
     const lines = Object.values(getColorValues(x, y, z));
@@ -87,7 +98,7 @@
     ctx.font = '16px monospace';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.globalAlpha = 0;
+    ctx.globalAlpha = 0; // Make box transparent
     // background box
     const lineHeight = 22;
     const boxWidth = Math.max(...lines.map(l => ctx.measureText(l).width)) + 20;
@@ -95,7 +106,7 @@
     ctx.fillStyle = '#fff';
     ctx.fillRect(width - boxWidth - margin, height - boxHeight - margin, boxWidth, boxHeight);
     ctx.globalAlpha = 1;
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = getOverlayTextColor(x, y, z);
     lines.forEach((line, i) => {
       ctx.fillText(line, width - margin, height - margin - (lines.length-1-i)*lineHeight);
     });
@@ -165,6 +176,15 @@
     lastTouchY = null;
     setTimeout(() => { swipeCount = 0; }, 500);
   });
+
+  function getLuminance(r, g, b) {
+    // sRGB luminance(Y) formula
+    r /= 255; g /= 255; b /= 255;
+    r = r <= 0.03928 ? r/12.92 : Math.pow((r+0.055)/1.055, 2.4);
+    g = g <= 0.03928 ? g/12.92 : Math.pow((g+0.055)/1.055, 2.4);
+    b = b <= 0.03928 ? b/12.92 : Math.pow((b+0.055)/1.055, 2.4);
+    return 0.2126*r + 0.7152*g + 0.0722*b;
+  }
 
   // Initial draw
   updateCanvas();
