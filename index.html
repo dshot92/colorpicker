@@ -13,50 +13,144 @@
     font: monospace, sans-serif;
     font-size: 1rem;
   }
-  canvas {
-    position: absolute;
-    top: 0; left: 0;
-    touch-action: none;
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
   }
-  select {
-    position: absolute;
-    bottom: 0px;
-    left: 0%;
-    padding: 0.5rem;
-    margin: 0.75rem;
-    border: none;
-    border-radius: 5px;
-    font-size: 1rem;
+  #c {
+    flex: 1 1 auto;
+    display: block;
+    position: relative;
+    width: 100vw;
+    height: calc(100vh - 3.5rem); /* leave space for bottom bar */
+    min-height: 0;
+    min-width: 0;
+  }
+  #bottomBar {
+    display: block;
+    width: 100vw;
+    background: #111;
+    color: #aaa;
+    padding: 0.5rem 1.5rem 0.5rem 1rem;
+    font-size: 1.1rem;
+    z-index: 10;
+    box-sizing: border-box;
+    min-height: 2rem;
   }
   #colorInfo {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+    justify-content: stretch;
+  }
+  #colorInfo span {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+    font-family: monospace, 'Fira Mono', 'Consolas', 'Menlo', 'Liberation Mono', 'Courier New', Courier, monospace;
+    color: #aaa;
+    background: none;
+    font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.01em;
+    margin: 0 auto;
+    cursor: pointer;
+    transition: color 0.7s;
+  }
+  #colorInfo span.copied {
+    color: #fff !important;
+  }
+  @media (max-width: 600px) {
+    #bottomBar {
+      font-size: 0.85rem;
+      padding: 0.4rem 0.5rem 0.4rem 0.5rem;
+    }
+    #colorInfo {
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 1fr;
+      gap: 0;
+    }
+    #colorInfo span {
+      font-size: 0.78rem;
+    }
+  }
+  .copy-toast {
     position: absolute;
-    bottom: 0px;
-    right: 0px;
-    padding-right: 0.5rem;
-    margin-right: 0.75rem;
-    text-align: right;
+    left: 50%;
+    bottom: 120%;
+    transform: translateX(-50%);
+    background: #222;
+    color: #eee;
+    padding: 0.3em 1em;
+    border-radius: 0.7em;
+    font-size: 0.95em;
+    z-index: 20;
+    box-shadow: 0 2px 8px #0003;
     pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s;
+    white-space: nowrap;
+    font-family: monospace, 'Fira Mono', 'Consolas', 'Menlo', 'Liberation Mono', 'Courier New', Courier, monospace;
+  }
+  .copy-toast.show {
+    opacity: 1;
   }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<select id="colorMode">
-  <option value="rgb">RGB</option>
-  <option value="hsl">HSL</option>
-</select>
-<div id="colorInfo"></div>
+<div id="bottomBar">
+  <div id="colorInfo">
+    <span id="hexVal"></span>
+    <span id="rgbVal"></span>
+    <span id="hslVal"></span>
+  </div>
+</div>
 <script>
   const canvas = document.getElementById('c')
   const ctx = canvas.getContext('2d')
-  const select = document.getElementById('colorMode')
-  const colorInfo = document.getElementById('colorInfo')
-  let width = window.innerWidth, height = window.innerHeight
-  canvas.width = width; canvas.height = height
-  
+  const hexVal = document.getElementById('hexVal')
+  const rgbVal = document.getElementById('rgbVal')
+  const hslVal = document.getElementById('hslVal')
+
+  let updateRequested = false;
+  function requestUpdate() {
+    if (!updateRequested) {
+      updateRequested = true;
+      requestAnimationFrame(() => {
+        updateRequested = false;
+        updateCanvas();
+      });
+    }
+  }
+
+  function resizeCanvas() {
+    // Set canvas size to exclude bottom bar
+    const bar = document.getElementById('bottomBar');
+    const barHeight = bar.offsetHeight;
+    const w = window.innerWidth;
+    const h = window.innerHeight - barHeight;
+    canvas.width = w;
+    canvas.height = h;
+    width = w;
+    height = h;
+    requestUpdate();
+  }
+  let width = window.innerWidth, height = window.innerHeight;
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
   let z = 0
-  let mode = select.value
-  
+
   function hsvToRgb(h, s, v) {
     h = h % 360;
     s = s; v = v;
@@ -104,20 +198,14 @@
   let lastPointerCanvas = { x: width / 2, y: height / 2 }; // actual canvas coordinates
 
   function colorFromXY(xNorm, yNorm, zNorm) {
-    if (mode === 'rgb') {
-      // Map xNorm to Red, yNorm to Green, zNorm to Blue
-      return `rgb(${xNorm*255},${yNorm*255},${zNorm*255})`;
-    } else {
-      const h = xNorm*360, s = yNorm*100, l = zNorm*100;
-      const [r, g, b] = hslToRgb(h, s, l);
-      return `rgb(${r},${g},${b})`;
-    }
+    // Always use RGB for fill
+    return `rgb(${xNorm*255},${yNorm*255},${zNorm*255})`;
   }
 
   function pad3(val) {
-    // Pad to 3 digits, but don't show useless zeros
+    // Pad to 3 digits, but don't show leading zeros
     val = Math.round(val).toString();
-    return val.padStart(3, ' ');
+    return val;
   }
 
   function getColorValues(xNorm, yNorm, zNorm) {
@@ -166,8 +254,9 @@
 
   function drawOverlay(xNorm, yNorm, zNorm) {
     const values = getColorValues(xNorm, yNorm, zNorm);
-    colorInfo.innerHTML = `<pre>${values.hex}\n${values.rgb}\n${values.hsl}</pre>`;
-    colorInfo.style.color = getOverlayTextColor(xNorm, yNorm, zNorm);
+    hexVal.textContent = values.hex;
+    rgbVal.textContent = values.rgb;
+    hslVal.textContent = values.hsl;
     setFaviconAndTitle(values.hex.replace('HEX: ', ''));
   }
 
@@ -192,18 +281,9 @@
 
   function updateColorInfo(xNorm, yNorm, zNorm) {
     const values = getColorValues(xNorm, yNorm, zNorm);
-    colorInfo.innerHTML = `<pre>${values.hex}\n${values.rgb}\n${values.hsl}</pre>`;
-  }
-
-  let updateRequested = false;
-  function requestUpdate() {
-    if (!updateRequested) {
-      updateRequested = true;
-      requestAnimationFrame(() => {
-        updateRequested = false;
-        updateCanvas();
-      });
-    }
+    hexVal.textContent = values.hex;
+    rgbVal.textContent = values.rgb;
+    hslVal.textContent = values.hsl;
   }
 
   let dragging = false;
@@ -329,6 +409,57 @@
     b = b <= 0.03928 ? b/12.92 : Math.pow((b+0.055)/1.055, 2.4);
     return 0.2126*r + 0.7152*g + 0.0722*b;
   }
+
+  // Add clipboard copy logic
+  function showCopyToast(target, msg) {
+    let toast = target.parentNode.querySelector('.copy-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'copy-toast';
+      target.parentNode.appendChild(toast);
+    }
+    toast.textContent = msg;
+    // Position above the span
+    const spanRect = target.getBoundingClientRect();
+    const parentRect = target.parentNode.getBoundingClientRect();
+    toast.style.left = (target.offsetLeft + target.offsetWidth/2) + 'px';
+    toast.style.bottom = (target.offsetHeight + 20) + 'px';
+    toast.classList.add('show');
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 900);
+  }
+  function makeCopyable(span) {
+    span.addEventListener('click', function () {
+      if (!span.textContent) return;
+      const text = span.textContent.replace(/^(HEX: |RGB: |HSL: )/, '');
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(text);
+        span.classList.add('copied');
+        setTimeout(() => {
+          span.classList.remove('copied');
+        }, 700);
+        showCopyToast(span, 'Copied');
+      } else {
+        // fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(textarea);
+        span.classList.add('copied');
+        setTimeout(() => {
+          span.classList.remove('copied');
+        }, 700);
+        showCopyToast(span, 'Copied');
+      }
+    });
+  }
+  makeCopyable(hexVal);
+  makeCopyable(rgbVal);
+  makeCopyable(hslVal);
 
   // Initial draw
   requestUpdate();
