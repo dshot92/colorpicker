@@ -32,11 +32,13 @@
     min-width: 0;
   }
   #bottomBar {
-    display: block;
+    display: flex;
+    align-items: center; /* Center content vertically */
+    justify-content: center;
     width: 100vw;
     background: #111;
     color: #aaa;
-    padding: 0.5rem 1.5rem 0.5rem 1rem;
+    padding: 0.5rem 1.5rem; /* Even vertical padding */
     font-size: 1.1rem;
     z-index: 10;
     box-sizing: border-box;
@@ -74,7 +76,7 @@
   @media (max-width: 600px) {
     #bottomBar {
       font-size: 0.85rem;
-      padding: 0.4rem 0.5rem 0.4rem 0.5rem;
+      padding: 0.4rem 0.5rem; /* Even vertical padding on mobile */
     }
     #colorInfo {
       grid-template-columns: 1fr 1fr 1fr;
