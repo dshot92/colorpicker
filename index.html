@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Color Picker</title>
 <link id="dynamic-favicon" rel="icon" type="image/png" href="">
+<link rel="manifest" href="/manifest.json">
 <style>
   html, body {
     margin: 0; padding: 0; overflow: hidden;
@@ -120,6 +121,9 @@
   </div>
 </div>
 <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
   // Set --vh custom property for mobile viewport height
   function setVh() {
     let vh = window.innerHeight * 0.01;
