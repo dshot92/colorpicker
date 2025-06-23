@@ -58,18 +58,25 @@
 
   let lastPointer = {x: width-1, y: height-1};
 
+  function pad3(val) {
+    // Pad to 3 digits, but don't show useless zeros
+    val = Math.round(val).toString();
+    return val.padStart(3, ' ');
+  }
+
   function getColorValues(x, y, z) {
     let fx = x/width, fy = y/height;
     // RGB
-    let r = Math.round(fy*255), g = Math.round(fx*255), b = Math.round(z*255);
+    let r = fy*255, g = fx*255, b = z*255;
     // HSV
-    let h_hsv = Math.round(fx*360), s_hsv = Math.round(fy*100), v_hsv = Math.round(z*100);
+    let h_hsv = fx*360, s_hsv = fy*100, v_hsv = z*100;
     // HSL
-    let h_hsl = Math.round(fx*360), s_hsl = Math.round(fy*100), l_hsl = Math.round(z*50);
+    let h_hsl = fx*360, s_hsl = fy*100, l_hsl = z*100;
     return {
-      rgb: `rgb:${r},${g},${b}`,
-      hsv: `hsv:${h_hsv},${s_hsv},${v_hsv}`,
-      hsl: `hsl:${h_hsl},${s_hsl},${l_hsl}`
+      hex: `HEX: #${((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1).toUpperCase()}`,
+      rgb: `RGB: ${pad3(r)} ,  ${pad3(g)}, ${pad3(b)} `,
+      hsv: `HSV: ${pad3(h_hsv)}°, ${pad3(s_hsv)}%, ${pad3(v_hsv)}%`,
+      hsl: `HSL: ${pad3(h_hsl)}°, ${pad3(s_hsl)}%, ${pad3(l_hsl)}%`,
     };
   }
 
