@@ -402,7 +402,8 @@
     } else if (e.touches.length === 2 && lastTouchY !== null) {
       const avgY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       const dy = avgY - lastTouchY;
-      z = lastZ + dy / (height - 2 * padding);
+      // Make z-value additive/subtractive based on drag direction
+      z = lastZ + (dy < 0 ? Math.abs(dy) : -dy) / (height - 2 * padding);
       if (z < 0) z = 0;
       if (z > 1) z = 1;
       requestUpdate();
