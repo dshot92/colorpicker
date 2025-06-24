@@ -11,56 +11,47 @@
     margin: 0; padding: 0; overflow: hidden;
     height: 100%;
     width: 100%;
-    font: monospace, sans-serif;
+    font-family: monospace, 'Fira Mono', 'Consolas', 'Menlo', 'Liberation Mono', 'Courier New', Courier, monospace;
     font-size: 1rem;
-    background-color: #000000;
+    background: #000;
   }
   body {
     display: flex;
     flex-direction: column;
-    /* Use --vh for mobile viewport height */
     height: calc(var(--vh, 1vh) * 100);
     width: 100vw;
-    overflow: hidden;
   }
   #c {
     flex: 1 1 auto;
     display: block;
-    position: relative;
     width: 100vw;
-    /* Use --vh for canvas height */
     height: calc(var(--vh, 1vh) * 100 - 3.5rem);
     min-height: 0;
     min-width: 0;
   }
   #bottomBar {
     display: flex;
-    align-items: center; /* Center content vertically */
+    align-items: center;
     justify-content: center;
     width: 100vw;
     background: #111;
     color: #aaa;
-    padding: 0.5rem 1.5rem; /* Even vertical padding */
+    padding: 0.5rem 1.5rem;
     font-size: 1.1rem;
     z-index: 10;
-    box-sizing: border-box;
     min-height: 2rem;
+    box-sizing: border-box;
   }
   #colorInfo {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr;
+    grid-template-columns: repeat(3, 1fr);
     align-items: center;
     width: 100%;
     gap: 0;
-    justify-content: stretch;
   }
   #colorInfo span {
-    display: block;
     width: 100%;
-    min-width: 0;
     text-align: center;
-    font-family: monospace, 'Fira Mono', 'Consolas', 'Menlo', 'Liberation Mono', 'Courier New', Courier, monospace;
     color: #aaa;
     background: none;
     font-size: 0.92rem;
@@ -77,16 +68,12 @@
   }
   @media (max-width: 600px) {
     #bottomBar {
-      font-size: 0.85rem;
-      padding: 0.4rem 0.5rem; /* Even vertical padding on mobile */
-    }
-    #colorInfo {
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: 1fr;
-      gap: 0;
+      font-size: 0.75rem;
+      padding: 0.4rem 0.5rem;
     }
     #colorInfo span {
-      font-size: 0.78rem;
+      font-size: 0.75rem;
+      padding: 0.1rem 0.2rem;
     }
   }
   .copy-toast {
@@ -105,7 +92,6 @@
     opacity: 0;
     transition: opacity 0.25s;
     white-space: nowrap;
-    font-family: monospace, 'Fira Mono', 'Consolas', 'Menlo', 'Liberation Mono', 'Courier New', Courier, monospace;
   }
   .copy-toast.show {
     opacity: 1;
