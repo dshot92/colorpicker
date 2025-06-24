@@ -44,6 +44,8 @@ self.addEventListener('activate', event => {
           .map(cacheName => caches.delete(cacheName))
       );
     }).then(() => {
+      // Force the waiting service worker to become the active service worker
+      self.skipWaiting();
       return self.clients.claim();
     })
   );
