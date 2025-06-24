@@ -30,51 +30,46 @@
     min-width: 0;
   }
   #bottomBar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: 1fr;
     width: 100vw;
     background: #111;
     color: #aaa;
-    padding: 0.5rem 1.5rem;
-    font-size: 1.1rem;
-    z-index: 10;
+    padding: 0.5rem;
+    font-size: clamp(0.8rem, 2vw, 1.2rem);
+    /* z-index: 10; */
     min-height: 2rem;
     box-sizing: border-box;
+    align-items: center;
+    justify-items: center;
   }
   #colorInfo {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    align-items: center;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
-    gap: 0;
+    /* gap: 0.2em; */
+    align-items: center;
+    justify-items: stretch;
   }
   #colorInfo span {
     width: 100%;
-    text-align: center;
+    min-width: 0;
     color: #aaa;
     background: none;
-    font-size: 0.92rem;
+    font-size: clamp(0.7rem, 2vw, 1rem);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    letter-spacing: 0.01em;
+    /* letter-spacing: 0.01em; */
     margin: 0 auto;
     cursor: pointer;
     transition: color 0.7s;
   }
+  #hexVal { text-align: left; }
+  #rgbVal { text-align: center; }
+  #hslVal { text-align: right; }
   #colorInfo span.copied {
     color: #fff !important;
-  }
-  @media (max-width: 600px) {
-    #bottomBar {
-      font-size: 0.75rem;
-      padding: 0.4rem 0.5rem;
-    }
-    #colorInfo span {
-      font-size: 0.75rem;
-      padding: 0.1rem 0.2rem;
-    }
   }
   .copy-toast {
     position: absolute;
