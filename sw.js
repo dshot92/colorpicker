@@ -4,9 +4,8 @@ const urlsToCache = [
   `${BASE_PATH}/`, // This is crucial - make sure this actually resolves to your index.html
   `${BASE_PATH}/index.html`,
   `${BASE_PATH}/public/manifest.json`,
-  `${BASE_PATH}/public/icon-192.png`,
-  `${BASE_PATH}/public/icon-512.png`,
-  `${BASE_PATH}/public/screenshot_mobile.png`
+  `${BASE_PATH}/public/icon.svg`,
+  `${BASE_PATH}/public/screenshot.png`
   // Add ALL your CSS, JS, and other assets here
 ];
 
